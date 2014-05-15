@@ -1,0 +1,8 @@
+lxml
+pycurl
+grab
+psycopg2
+django
+django-filter
+djangorestframework
+pytz
