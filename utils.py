@@ -52,7 +52,13 @@ def ru_str_date_to_date_stream(ru_date):
     for ru, en in date_mapping.items():
         new_date = new_date.replace(ru, en)
 
-    date = datetime.strptime(new_date, '%d %m %Y г. %H:%M')
+    py2_date = new_date.encode('utf-8')
+
+    py3_format = '%d %m %Y г. %H:%M'
+    py2_format = py3_format.encode('utf-8')
+
+    date = datetime.strptime(py2_date if isinstance(py2_date, str) else new_date,
+                            py2_format if isinstance(py2_format, str) else py3_format)
 
     return to_msk_datetime(date)
 
@@ -64,8 +70,15 @@ def ru_str_date_to_date_comment(ru_date):
         new_date = new_date.replace(ru, en)
 
     str_date = new_date.replace('\n          ', '').replace('                      ', '')
-    str_date = '0' + str_date if str_date.index(':') == 1 else str_date
-    date = datetime.strptime(str_date, '%H:%M,%d %m %Y г.')
+    py3_date = '0' + str_date if str_date.index(':') == 1 else str_date
+    py2_date = py3_date.encode('utf-8')
+
+    py3_format = '%H:%M,%d %m %Y г.'
+    py2_format =  py3_format.encode('utf-8')
+
+
+    date = datetime.strptime(py2_date if isinstance(py2_date, str) else py3_date,
+                            py2_format if isinstance(py2_format, str) else py3_format)
 
     return to_msk_datetime(date)
 

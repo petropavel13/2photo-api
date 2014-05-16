@@ -16,7 +16,18 @@ import threading
 
 from django.db import transaction
 
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import ThreadPool as TP
+
+
+class ThreadPool(TP):
+    # python 2 support
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.terminate()
+
 
 class BaseSpider(Spider):
     BASE_URL = 'http://www.2photo.ru'
