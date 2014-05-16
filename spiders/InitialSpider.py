@@ -9,7 +9,7 @@ from grab.spider import Task
 import logging
 
 logging.basicConfig(level=logging.INFO)
-logging.getLogger().addHandler(logging.FileHandler('parse.log'))
+logging.getLogger().addHandler(logging.FileHandler('/tmp/parse.log'))
 
 from grab.tools.logs import default_logging
 default_logging()

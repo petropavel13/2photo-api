@@ -1,5 +1,5 @@
-lxml
 pycurl
+lxml
 grab
 psycopg2
 django
