@@ -6,11 +6,10 @@ from __future__ import unicode_literals # py2
 SECRET_KEY = 'hl0dgj3m@+pheym_m%&^w7sv4iy8j@l^_wxl2crp%b3_5@8ii+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['198.49.66.155']
 
 
 # Application definition
