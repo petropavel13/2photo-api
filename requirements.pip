@@ -1,8 +1,12 @@
 pycurl
 lxml
 grab
+
 psycopg2
+
 django
 django-filter
 djangorestframework
 pytz
+
+uwsgi
