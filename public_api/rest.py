@@ -12,8 +12,8 @@ from django.db.models import Count
 
 
 def gen_serializer(name='CustomSerializer', base=ModelSerializer, **kwargs):
-    meta = type('Meta', (base.Meta,), kwargs)
-    return type(name, (base,), {'Meta': meta})
+    meta = type(str('Meta'), (base.Meta,), kwargs)
+    return type(str(name), (base,), {'Meta': meta})
 
 
 class ApiViewSet(ReadOnlyModelViewSet):
