@@ -47,12 +47,13 @@ class InitialSpider(BaseSpider):
 
         # all_posts = g.go(task.url + ('?limit=128&offset=4096')).json['posts']
 
+        # all_posts = g.go(task.url + ('?limit=64&offset=900')).json['posts']
+        # yield Task('post', url=self.BASE_URL + '/ru/post/31279', post=list(filter(lambda x: x['id'] == '31279', all_posts))[0])
+
         for x in range(0, max_offset, 256):
             logging.info('Loading stream posts %d-%d (%d) time:%d' % (max_offset - x, max_offset - x - 256,  max_offset, g.response.total_time,))
             all_posts.extend(g.go(task.url + ('?limit=256&offset=%d' % x)).json['posts'])
 
-        # yield Task('post', url=self.BASE_URL + '/ru/post/32033', post=list(filter(lambda x: x['id'] == '32033', all_posts))[0])
-        # yield Task('post', url=self.BASE_URL + '/ru/post/31279', post=list(filter(lambda x: x['id'] == '31279', all_posts))[0])
 
         for post in all_posts:
             yield Task('post', url=self.BASE_URL + post['link'], post=post)

@@ -81,8 +81,7 @@ class BaseSpider(Spider):
 
             author_link = boxes[0].select('div/a[@class="nickname"]').attr('href')
 
-            for ab in boxes[1:]:
-                artists_links.append(ab.select('a').attr('href'))
+            artists_links = [ab.select('a').attr('href') for ab in boxes[1:]]
 
         else:
             author_link = author_boxes.select('.//a[@class="nickname"]').attr('href')
@@ -425,6 +424,7 @@ class BaseSpider(Spider):
         with transaction.atomic():
             for post in self.posts_for_save:
                 raw_post_artists = set(post['artists_ids'])
+                logging.debug('post_id: %d, artists_ids: %s', post['id'], ','.join(raw_post_artists))
 
                 [self.all_posts_mapping[post['id']].artists.add(artists_mapping[a]) for a in raw_post_artists]
 
