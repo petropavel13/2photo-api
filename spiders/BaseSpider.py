@@ -419,14 +419,14 @@ class BaseSpider(Spider):
     def save_posts_artists(self):
         logging.info('Saving posts-artists...')
 
-        artists_mapping = { a.id: a for a in Artist.objects.only('id').all() }
+        all_artists_mapping = { a.id: a for a in Artist.objects.only('id').all() }
 
         with transaction.atomic():
             for post in self.posts_for_save:
                 raw_post_artists = set(post['artists_ids'])
-                logging.debug('post_id: %d, artists_ids: %s', post['id'], ','.join(raw_post_artists))
+                logging.info('post_id: %d, artists_ids: %s' % (post['id'], raw_post_artists.__str__()))
 
-                [self.all_posts_mapping[post['id']].artists.add(artists_mapping[a]) for a in raw_post_artists]
+                self.all_posts_mapping[post['id']].artists.add(*[all_artists_mapping[a] for a in raw_post_artists])
 
         logging.info('Saving posts-artists done')
 
@@ -453,13 +453,13 @@ class BaseSpider(Spider):
     def save_posts_tags(self):
         logging.info('Saving posts-tags...')
 
-        all_tags = Tag.objects.only('id').all()
+        all_tags_mapping = { t.id: t for t in Tag.objects.only('id').all() }
 
         with transaction.atomic():
             for post in self.posts_for_save:
                 raw_post_tags = { t['id'] for t in post['tags'] }
 
-                [self.all_posts_mapping[post['id']].tags.add(t) for t in all_tags if t.id in raw_post_tags]
+                self.all_posts_mapping[post['id']].tags.add(*[all_tags_mapping[t] for t in raw_post_tags])
 
         logging.info('Saving posts-tags done')
 
@@ -467,13 +467,13 @@ class BaseSpider(Spider):
     def save_posts_categories(self):
         logging.info('Saving posts-categories...')
 
-        all_categories = Category.objects.only('id').all()
+        all_categories_mapping = { c.id : c for c in Category.objects.only('id').all() }
 
         with transaction.atomic():
             for post in self.posts_for_save:
                 raw_post_categories = { c['id'] for c in post['categories'] }
 
-                [self.all_posts_mapping[post['id']].categories.add(c) for c in all_categories if c.id in raw_post_categories]
+                self.all_posts_mapping[post['id']].categories.add(*[all_categories_mapping[c] for c in raw_post_categories])
 
         logging.info('Saving posts-categories done')
 
@@ -524,37 +524,37 @@ class BaseSpider(Spider):
 
 
     def save_all(self):
-        # self.save_tags()
-        # self.save_categories()
-        # self.save_users()
-        # self.save_artists()
+        self.save_tags()
+        self.save_categories()
+        self.save_users()
+        self.save_artists()
 
 
-        with ThreadPool(processes=2) as executor:
-            executor.apply_async(self.save_tags)
-            executor.apply_async(self.save_categories)
-            executor.apply_async(self.save_users)
-            executor.apply_async(self.save_artists)
+        # with ThreadPool(processes=2) as executor:
+        #     executor.apply_async(self.save_tags)
+        #     executor.apply_async(self.save_categories)
+        #     executor.apply_async(self.save_users)
+        #     executor.apply_async(self.save_artists)
 
-            executor.close()
-            executor.join()
+        #     executor.close()
+        #     executor.join()
 
 
         self.save_posts()
 
 
-        # self.save_posts_tags()
-        # self.save_posts_categories()
-        # self.save_posts_artists()
-        # self.save_entries()
-        # self.save_comments()
+        self.save_posts_tags()
+        self.save_posts_categories()
+        self.save_posts_artists()
+        self.save_entries()
+        self.save_comments()
 
-        with ThreadPool(processes=2) as executor:
-            executor.apply_async(self.save_posts_tags)
-            executor.apply_async(self.save_posts_categories)
-            executor.apply_async(self.save_posts_artists)
-            executor.apply_async(self.save_entries)
-            executor.apply_async(self.save_comments)
+        # with ThreadPool(processes=2) as executor:
+        #     executor.apply_async(self.save_posts_tags)
+        #     executor.apply_async(self.save_posts_categories)
+        #     executor.apply_async(self.save_posts_artists)
+        #     executor.apply_async(self.save_entries)
+        #     executor.apply_async(self.save_comments)
 
-            executor.close()
-            executor.join()
+        #     executor.close()
+        #     executor.join()
