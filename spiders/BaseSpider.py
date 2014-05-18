@@ -176,7 +176,7 @@ class BaseSpider(Spider):
             comment = {
                 'id': int(message_item_el.attr('rel')),
                 'rating': rating,
-                'user_id': user_id,
+                'user_id': int(user_id),
                 'message': message_text,
                 'date': message_date,
                 'reply_to_id': parent,
@@ -231,7 +231,7 @@ class BaseSpider(Spider):
             yield Task('user', self.BASE_URL + '/ru/profile/%d' % u, user_id=u)
 
 
-        artists_to_create = artists_ids
+        artists_to_create = set(artists_ids) # clone
 
         with self.artists_read_lock:
             artists_to_create -= self.artists_ids_in_db
@@ -424,30 +424,10 @@ class BaseSpider(Spider):
         with transaction.atomic():
             for post in self.posts_for_save:
                 raw_post_artists = set(post['artists_ids'])
-                logging.info('post_id: %d, artists_ids: %s' % (post['id'], raw_post_artists.__str__()))
 
                 self.all_posts_mapping[post['id']].artists.add(*[all_artists_mapping[a] for a in raw_post_artists])
 
         logging.info('Saving posts-artists done')
-
-
-    def save_entries(self):
-        logging.info('Saving entries...')
-
-        entries_for_save = []
-
-        for post in self.posts_for_save:
-            r_post = self.all_posts_mapping[post['id']]
-            entries = post['entries']
-
-            [e.update(post=r_post) for e in entries]
-
-            entries_for_save.extend(entries)
-
-        with transaction.atomic():
-            bulk_save_by_chunks(dicts_to_model_instances(entries_for_save, Entry), Entry, 1024)
-
-        logging.info('Saving entries done')
 
 
     def save_posts_tags(self):
@@ -476,6 +456,25 @@ class BaseSpider(Spider):
                 self.all_posts_mapping[post['id']].categories.add(*[all_categories_mapping[c] for c in raw_post_categories])
 
         logging.info('Saving posts-categories done')
+
+
+    def save_entries(self):
+        logging.info('Saving entries...')
+
+        entries_for_save = []
+
+        for post in self.posts_for_save:
+            r_post = self.all_posts_mapping[post['id']]
+            entries = post['entries']
+
+            [e.update(post=r_post) for e in entries]
+
+            entries_for_save.extend(entries)
+
+        with transaction.atomic():
+            bulk_save_by_chunks(dicts_to_model_instances(entries_for_save, Entry), Entry, 1024)
+
+        logging.info('Saving entries done')
 
 
     def save_comments(self):
@@ -524,37 +523,37 @@ class BaseSpider(Spider):
 
 
     def save_all(self):
-        self.save_tags()
-        self.save_categories()
-        self.save_users()
-        self.save_artists()
+        # self.save_tags()
+        # self.save_categories()
+        # self.save_users()
+        # self.save_artists()
 
 
-        # with ThreadPool(processes=2) as executor:
-        #     executor.apply_async(self.save_tags)
-        #     executor.apply_async(self.save_categories)
-        #     executor.apply_async(self.save_users)
-        #     executor.apply_async(self.save_artists)
+        with ThreadPool(processes=2) as executor:
+            executor.apply_async(self.save_tags)
+            executor.apply_async(self.save_categories)
+            executor.apply_async(self.save_users)
+            executor.apply_async(self.save_artists)
 
-        #     executor.close()
-        #     executor.join()
+            executor.close()
+            executor.join()
 
 
         self.save_posts()
 
 
-        self.save_posts_tags()
-        self.save_posts_categories()
-        self.save_posts_artists()
-        self.save_entries()
-        self.save_comments()
+        # self.save_posts_tags()
+        # self.save_posts_categories()
+        # self.save_posts_artists()
+        # self.save_entries()
+        # self.save_comments()
 
-        # with ThreadPool(processes=2) as executor:
-        #     executor.apply_async(self.save_posts_tags)
-        #     executor.apply_async(self.save_posts_categories)
-        #     executor.apply_async(self.save_posts_artists)
-        #     executor.apply_async(self.save_entries)
-        #     executor.apply_async(self.save_comments)
+        with ThreadPool(processes=2) as executor:
+            executor.apply_async(self.save_posts_tags)
+            executor.apply_async(self.save_posts_categories)
+            executor.apply_async(self.save_posts_artists)
+            executor.apply_async(self.save_entries)
+            executor.apply_async(self.save_comments)
 
-        #     executor.close()
-        #     executor.join()
+            executor.close()
+            executor.join()
