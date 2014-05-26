@@ -35,7 +35,6 @@ class UpdateSpider(BaseSpider):
             logging.info('Up to date')
         else:
             g = Grab(connect_timeout=30, timeout=60)
-            import pudb; pudb.set_trace()
 
             while True:
                 posts = { int(p['id']): p for p in g.go(task.url + ('?limit=10&offset=%d' % max_offset)).json['posts'] }
