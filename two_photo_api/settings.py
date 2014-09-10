@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals # py2
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'hl0dgj3m@+pheym_m%&^w7sv4iy8j@l^_wxl2crp%b3_5@8ii+'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+SECRET_KEY = ''
 
 TEMPLATE_DEBUG = DEBUG = False
 
 ALLOWED_HOSTS = ['198.49.66.155']
 
-
-# Application definition
 
 INSTALLED_APPS = (
     # 'django.contrib.admin',
@@ -39,9 +36,6 @@ ROOT_URLCONF = 'two_photo_api.urls'
 WSGI_APPLICATION = 'two_photo_api.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/1.6/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -51,9 +45,6 @@ DATABASES = {
         'PASSWORD': '123',
     }
 }
-
-# Internationalization
-# https://docs.djangoproject.com/en/1.6/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -65,9 +56,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
 
@@ -92,3 +80,8 @@ REST_FRAMEWORK = {
 
     'PAGINATE_BY_PARAM': 'limit',
 }
+
+try:
+    from local_settings import *
+except ImportError:
+    pass
