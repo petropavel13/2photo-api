@@ -4,7 +4,7 @@ upstream django {
 
 server {
     listen      80;
-    server_name 198.49.66.155;
+    server_name localhost;
     charset     utf-8;
 
     # max upload size
