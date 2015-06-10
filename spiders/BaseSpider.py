@@ -8,6 +8,9 @@ from grab.selector import XpathSelector
 
 from utils import *
 
+import django
+django.setup()
+
 from public_api.models import *
 
 import logging
