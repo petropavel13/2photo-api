@@ -88,7 +88,7 @@ class PostListSerializer(ModelSerializer):
     tags = gen_serializer(exclude=('posts',), model=Tag)(many=True)
     categories = CategoryListSerializer(many=True)
     author = gen_serializer(fields=('id', 'name', 'avatar_url',), model=User)()
-    number_of_comments = SerializerMethodField('get_number_of_comments')
+    number_of_comments = SerializerMethodField()
 
     def get_number_of_comments(self, obj):
         return obj.comments.count()
@@ -111,7 +111,7 @@ class PostViewSet(ApiViewSet):
 
 
 class ArtistListSerializer(ModelSerializer):
-    number_of_posts = SerializerMethodField('get_number_of_posts')
+    number_of_posts = SerializerMethodField()
 
     def get_number_of_posts(self, obj):
         return obj.posts.count()
@@ -170,8 +170,8 @@ class UserOrderingFilter(OrderingFilter):
         return queryset
 
 class UserListSerializer(ModelSerializer):
-    number_of_comments = SerializerMethodField('get_number_of_comments')
-    number_of_posts = SerializerMethodField('get_number_of_posts')
+    number_of_comments = SerializerMethodField()
+    number_of_posts = SerializerMethodField()
 
     def get_number_of_comments(self, obj):
         return obj.comments.count()
