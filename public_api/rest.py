@@ -12,8 +12,7 @@ from django.db.models import Count
 
 
 def gen_serializer(name='CustomSerializer', base=ModelSerializer, **kwargs):
-    meta = type(str('Meta'), (base.Meta,), kwargs)
-    return type(str(name), (base,), {'Meta': meta})
+    return type(str(name), (base,), {})
 
 
 class ApiViewSet(ReadOnlyModelViewSet):
@@ -28,7 +27,7 @@ class ApiViewSet(ReadOnlyModelViewSet):
 
 
 class TagSerializer(ModelSerializer):
-    class Meta(ModelSerializer.Meta):
+    class Meta:
         exclude = ('posts',)
         model = Tag
 
@@ -41,7 +40,7 @@ class TagViewSet(ReadOnlyModelViewSet):
 
 
 class CategoryListSerializer(ModelSerializer):
-    class Meta(ModelSerializer.Meta):
+    class Meta:
         exclude = ('posts',)
         model = Category
 
@@ -67,7 +66,7 @@ class PostDetailSerializer(ModelSerializer):
     class CommentPostDetailSerializer(ModelSerializer):
         author = gen_serializer(fields=('id', 'name', 'avatar_url',), model=User)()
 
-        class Meta(ModelSerializer.Meta):
+        class Meta:
             model = Comment
             exclude = ('post',)
 
@@ -78,7 +77,7 @@ class PostDetailSerializer(ModelSerializer):
     categories = gen_serializer(exclude=('posts',), model=Category)(many=True)
 
 
-    class Meta(ModelSerializer.Meta):
+    class Meta:
         model = Post
 
 
@@ -93,7 +92,7 @@ class PostListSerializer(ModelSerializer):
     def get_number_of_comments(self, obj):
         return obj.comments.count()
 
-    class Meta(ModelSerializer.Meta):
+    class Meta:
         model = Post
 
 
@@ -116,7 +115,7 @@ class ArtistListSerializer(ModelSerializer):
     def get_number_of_posts(self, obj):
         return obj.posts.count()
 
-    class Meta(ModelSerializer.Meta):
+    class Meta:
         exclude = ('posts',)
         model = Artist
 
@@ -179,7 +178,7 @@ class UserListSerializer(ModelSerializer):
     def get_number_of_posts(self, obj):
         return obj.posts.count()
 
-    class Meta(ModelSerializer.Meta):
+    class Meta:
         exclude = ('posts', 'comments',)
         model = User
 
