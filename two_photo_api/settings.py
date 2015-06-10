@@ -8,7 +8,7 @@ SECRET_KEY = ''
 
 TEMPLATE_DEBUG = DEBUG = False
 
-ALLOWED_HOSTS = ['198.49.66.155']
+ALLOWED_HOSTS = ['*']
 
 
 INSTALLED_APPS = (
@@ -40,9 +40,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': '2photo',
-        'HOST': '192.168.0.108',
-        'USER': '2photo_updater',
-        'PASSWORD': '123',
+        'HOST': '',
+        'USER': '',
+        'PASSWORD': '',
     }
 }
 
