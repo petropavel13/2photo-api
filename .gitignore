@@ -41,6 +41,7 @@ coverage.xml
 # Django stuff:
 *.log
 two_photo_api/local_settings.py
+two_photo_api/uwsgi.ini
 
 # Sphinx documentation
 docs/_build/
