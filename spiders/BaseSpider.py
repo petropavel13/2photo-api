@@ -286,7 +286,7 @@ class BaseSpider(Spider):
         description = None
 
         for info_el in user_info_el.select('dl/*'):
-            if info_el.node.tag == 'dt':
+            if info_el.node().tag == 'dt':
                 next_key = info_el.text()
                 continue
 
