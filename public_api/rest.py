@@ -75,7 +75,7 @@ class PostDetailSerializer(ModelSerializer):
 
 
     comments = CommentPostDetailSerializer(many=True)
-    artists = gen_serializer(fields=('id', 'name', 'avatar_url',), model=Artist)()
+    artists = gen_serializer(fields=('id', 'name', 'avatar_url',), model=Artist)(many=True)
     tags = gen_serializer(exclude=('posts',), model=Tag)(many=True)
     categories = gen_serializer(exclude=('posts',), model=Category)(many=True)
 
