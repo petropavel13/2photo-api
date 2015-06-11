@@ -181,7 +181,6 @@ class UserListSerializer(ModelSerializer):
         return obj.posts.count()
 
     class Meta:
-        exclude = ('posts', 'comments',)
         model = User
 
 
