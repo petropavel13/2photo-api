@@ -54,7 +54,7 @@ class CategoryViewSet(ReadOnlyModelViewSet):
 
 
 class CommentViewSet(ReadOnlyModelViewSet):
-    queryset = Category.objects.all()
+    queryset = Comment.objects.all()
 
     filter_fields = ('author', 'post',)
     ordering = ('-date',)
