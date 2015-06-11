@@ -136,7 +136,7 @@ class ArtistViewSet(ReadOnlyModelViewSet):
 
 class UserOrderingFilter(OrderingFilter):
     def filter_queryset(self, request, queryset, view):
-        ordering = self.get_ordering(request)
+        ordering = self.get_ordering(request, queryset, view)
 
         if ordering:
             # Skip any incorrect parameters
