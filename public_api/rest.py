@@ -56,6 +56,7 @@ class CategoryViewSet(ReadOnlyModelViewSet):
 class CommentViewSet(ReadOnlyModelViewSet):
     queryset = Comment.objects.all()
 
+    serializer_class = gen_serializer(model=Comment)
     filter_fields = ('author', 'post',)
     ordering = ('-date',)
 
