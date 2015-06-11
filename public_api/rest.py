@@ -118,7 +118,6 @@ class ArtistListSerializer(ModelSerializer):
         return obj.posts.count()
 
     class Meta:
-        exclude = ('posts',)
         model = Artist
 
 
