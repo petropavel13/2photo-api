@@ -109,8 +109,8 @@ class BaseSpider(Spider):
 
             entries.append({
                 'id': entry_id,
-                'big_img_url': entry_big_img_url[2:],
-                'medium_img_url': entry_medium_img_url[2:],
+                'big_img_url': 'http://' + entry_big_img_url[2:],
+                'medium_img_url': 'http://' + entry_medium_img_url[2:],
                 'description': entry_text,
                 'rating': prct_to_int(rate_text),
                 'order': order,
@@ -213,7 +213,7 @@ class BaseSpider(Spider):
             'tags': tags,
             'categories': categories,
             'comments': comments,
-            'face_image_url': task.post['image'][2:],
+            'face_image_url': 'http://' + task.post['image'][2:],
             'rating': post_rate,
         })
 
@@ -325,7 +325,7 @@ class BaseSpider(Spider):
                 'carma': carma,
                 'skype': skype,
                 'description': description,
-                'avatar_url': img_url[2:],
+                'avatar_url': 'http://' + img_url[2:],
         })
 
 
@@ -341,7 +341,7 @@ class BaseSpider(Spider):
         self.artists_for_save.append({
             'id': task.artist_id,
             'name': name,
-            'avatar_url': avatar_url[2:],
+            'avatar_url': 'http://' + avatar_url[2:],
             'description': description_text,
         })
 
