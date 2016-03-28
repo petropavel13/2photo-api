@@ -43,7 +43,9 @@ def prct_to_int(percent):
 
 @if_not_none
 def url_to_id(url):
-    return int(url[url.rindex('/') + 1:])
+    str_id = url[url.rindex('/') + 1:]
+
+    return int(str_id) if len(str_id) > 0 else None
 
 
 def ru_str_date_to_date_stream(ru_date):
