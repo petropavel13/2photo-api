@@ -4,7 +4,7 @@ from __future__ import unicode_literals # py2
 
 from grab import Grab
 from grab.spider import Spider, Task
-from grab.selector import XpathSelector
+from selection import XpathSelector
 
 from utils import *
 

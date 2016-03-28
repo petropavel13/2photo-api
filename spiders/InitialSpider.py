@@ -11,7 +11,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logging.getLogger().addHandler(logging.FileHandler('/tmp/parse.log'))
 
-from grab.tools.logs import default_logging
+from weblib.logs import default_logging
 default_logging()
 
 
