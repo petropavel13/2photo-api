@@ -14,6 +14,7 @@ logging.getLogger().addHandler(logging.FileHandler('/tmp/parse.log'))
 from grab.tools.logs import default_logging
 default_logging()
 
+
 class InitialSpider(BaseSpider):
     """Spider for initial data grabbing"""
 
@@ -26,7 +27,7 @@ class InitialSpider(BaseSpider):
         sorted_posts = sorted(grab.response.json['posts'], key=lambda x: int(x['id']))
         past_jump = max_offset = int(sorted_posts[0]['id'])
 
-        g = Grab(connect_timeout=30, timeout=60)
+        g = self.create_grab_instance()
 
         while True:
             cnt = len(g.go(task.url + ('?limit=10&offset=%d' % max_offset)).json['posts'])

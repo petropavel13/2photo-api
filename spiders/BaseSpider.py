@@ -58,6 +58,20 @@ class BaseSpider(Spider):
     category_read_lock = threading.Lock()
 
 
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('thread_number', 8)
+        kwargs.setdefault('network_try_limit', 32)
+        kwargs.setdefault('task_try_limit', 8)
+
+        super(BaseSpider, self).__init__(*args, **kwargs)
+
+    def create_grab_instance(self, **kwargs):
+        g = super(BaseSpider, self).create_grab_instance(**kwargs)
+
+        g.setup(timeout=2 * 60, connect_timeout=30)
+
+        return g
+
     def task_post(self, grab, task):
         logging.info('Parsing post %s' % task.url)
 

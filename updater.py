@@ -11,8 +11,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "two_photo_api.settings")
 
 from spiders import UpdateSpider
 
-spider = UpdateSpider(thread_number=8, network_try_limit=64, task_try_limit=32)
-spider.grab_config.update(timeout=60, connect_timeout=30)
+spider = UpdateSpider()
 spider.run()
 
 spider.save_all()
