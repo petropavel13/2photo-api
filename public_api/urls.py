@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 
 from public_api.rest import TagViewSet, CategoryViewSet, UserViewSet, ArtistViewSet, CommentViewSet, PostViewSet
 from rest_framework.routers import DefaultRouter
@@ -20,6 +20,6 @@ router.register(prefix=r'comments', viewset=CommentViewSet)
 router.register(prefix=r'posts', viewset=PostViewSet)
 
 
-urlpatterns = patterns('',
+urlpatterns = [
 	url('', include(router.urls)),
-)
+]
