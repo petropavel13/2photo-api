@@ -113,12 +113,29 @@ def dict_to_model_instance(dict_obj, dj_model):
     return dj_model( **clean_dict_for_model(dict_obj, dj_model) )
 
 
-def dicts_to_model_instances(dict_objs, dj_model):
-    clean_objs = [clean_dict_for_model(d, dj_model) for d in dict_objs]
+def bulk_create_by_chunks(iterable_objects, dj_model, chunk_size=1024):
+    buffer = [None] * chunk_size
 
-    return [dj_model(**d) for d in clean_objs]
+    next_idx = 0
+
+    for obj in iterable_objects:
+        buffer[next_idx] = obj
+
+        if next_idx != 0 and next_idx % chunk_size == 0:
+            dj_model.objects.bulk_create(buffer)
+
+            next_idx = 0
+
+        next_idx += 1
+
+    dj_model.objects.bulk_create(buffer[0:next_idx])
 
 
-def bulk_save_by_chunks(objects, dj_model, chunk_size=1024):
-    for x in range(0, len(objects), chunk_size):
-        dj_model.objects.bulk_create(objects[x:x + chunk_size])
+def namedtuples_to_model_instances_generator(namedtuples, dj_model):
+    for namedtuple in namedtuples:
+        yield dict_to_model_instance(namedtuple._asdict(), dj_model)
+
+
+def bulk_save_namedtuples(namedtuples, dj_model, chunk_size=1024):
+    model_instances_generator = namedtuples_to_model_instances_generator(namedtuples, dj_model)
+    bulk_create_by_chunks(model_instances_generator, dj_model, chunk_size)

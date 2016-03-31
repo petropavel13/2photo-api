@@ -58,5 +58,5 @@ class InitialSpider(BaseSpider):
 
 
         for post in all_posts:
-            yield Task('post', url=self.BASE_URL + post['link'], post=post)
+            yield Task('post', url=self.BASE_URL + post['link'], post=self.spider_post_from_post(post))
 

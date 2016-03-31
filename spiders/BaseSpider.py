@@ -13,6 +13,8 @@ django.setup()
 
 from public_api.models import *
 
+from spiders.SpiderModels import *
+
 import logging
 
 import threading
@@ -57,6 +59,7 @@ class BaseSpider(Spider):
     tag_read_lock = threading.Lock()
     category_read_lock = threading.Lock()
 
+    EMPTY_USER_ID = 0
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('thread_number', 8)
@@ -72,6 +75,13 @@ class BaseSpider(Spider):
 
         return g
 
+    def spider_post_from_post(self, post):
+        spider_post_dict = { k: None for k in SpiderPost._fields }
+        spider_post_dict.update(**{ k: v for k, v in post.iteritems() if k in SpiderPost._fields })
+        spider_post_dict.update(face_image_url=post.get('image'))
+
+        return SpiderPost(**spider_post_dict)
+
     def task_post(self, grab, task):
         logging.info('Parsing post %s' % task.url)
 
@@ -79,7 +89,7 @@ class BaseSpider(Spider):
 
         album_desc_el = album_el.select('div[@class="album-desc"]')
 
-        post_title = task.post.get('title') or album_desc_el.select('h1').text()
+        post_title = task.post.title or album_desc_el.select('h1').text()
 
         description_el = album_desc_el.select('p')
         album_description = description_el.text() if description_el.exists() else None
@@ -121,34 +131,35 @@ class BaseSpider(Spider):
 
             order = entry_el.select('em').text()
 
-            entries.append({
-                'id': entry_id,
-                'big_img_url': 'http://' + entry_big_img_url[2:],
-                'medium_img_url': 'http://' + entry_medium_img_url[2:],
-                'description': entry_text,
-                'rating': prct_to_int(rate_text),
-                'order': order,
-            })
+            entries.append(SpiderEntry(
+                id=entry_id,
+                big_img_url='http://' + entry_big_img_url[2:],
+                medium_img_url='http://' + entry_medium_img_url[2:],
+                description=entry_text,
+                rating=prct_to_int(rate_text),
+                order=order,
+                post=None,
+            ))
 
         tags = []
 
         for tag_el in album_el.select('div[h5="Метки:"]/ul/li/a'):
             tag_link = tag_el.attr('href')
 
-            tags.append({
-                'id': url_to_id(tag_link),
-                'title': tag_el.text(),
-            })
+            tags.append(SpiderTag(
+                id=url_to_id(tag_link),
+                title=tag_el.text(),
+            ))
 
         categories = []
 
         for theme_el in album_el.select('div[h5="Темы:"]/ul/li/a'):
             theme_link = theme_el.attr('href')
 
-            categories.append({
-                'id': url_to_id(theme_link),
-                'title': theme_el.text(),
-            })
+            categories.append(SpiderCategory(
+                id=url_to_id(theme_link),
+                title=theme_el.text(),
+            ))
 
         comments = []
 
@@ -190,57 +201,58 @@ class BaseSpider(Spider):
             elif current_level < last_level:
                 parent = last_for_level.get(current_level - 1)
 
-            comment = {
-                'id': int(message_item_el.attr('rel')),
-                'rating': rating,
-                'user_id': int(user_id),
-                'message': message_text,
-                'date': message_date,
-                'reply_to_id': parent,
-            }
+            comment = SpiderComment(
+                id=int(message_item_el.attr('rel')),
+                rating=rating,
+                user_id=int(user_id),
+                message=message_text,
+                date=message_date,
+                reply_to_id=parent,
+                post=None,
+                author=None,
+                reply_to=None,
+            )
 
             comments.append(comment)
 
             last_level = current_level
-            last_for_level[last_level] = comment['id']
+            last_for_level[last_level] = comment.id
 
 
-        post_rate = task.post.get('rating') or prct_to_int(album_el.select('div[@class="rate"]').text())
+        post_rate = int(task.post.rating) if task.post.rating else prct_to_int(album_el.select('div[@class="rate"]').text())
 
-        post_id = int(task.post['id'])
-
-        task.post['id'] = post_id
-        task.post['rating'] = int(task.post['rating'])
-        task.post['date'] = ru_str_date_to_date_stream(task.post['date'])
+        post_id = int(task.post.id)
 
         author_id = url_to_id(author_link)
 
         artists_ids = set(map(url_to_id, artists_links))
 
-        task.post.update({
-            'title': post_title,
-            'description': album_description,
-            'artists_ids': artists_ids,
-            'author_id': author_id,
-            'link': link,
-            'entries': entries,
-            'tags': tags,
-            'categories': categories,
-            'comments': comments,
-            'face_image_url': 'http://' + task.post['image'][2:],
-            'rating': post_rate,
-        })
+        task.post = task.post._replace(
+            id = post_id,
+            date = ru_str_date_to_date_stream(task.post.date),
+            title=post_title,
+            description=album_description,
+            artists_ids=artists_ids,
+            author_id=author_id if author_id else self.EMPTY_USER_ID,
+            link=link,
+            entries=entries,
+            tags=tags,
+            categories=categories,
+            comments=comments,
+            face_image_url='http://' + task.post.face_image_url[2:],
+            rating=post_rate,
+            author=None,
+        )
 
         self.posts_for_save.append(task.post)
 
-        users_to_create = { c['user_id'] for c in comments if c['user_id'] != 0 } | { author_id }
-
-        # import pudb; pudb.set_trace()
+        users_to_create = { c.user_id for c in comments if c.user_id != self.EMPTY_USER_ID }
+        users_to_create |= frozenset() if author_id is None else { author_id }
 
         with self.user_read_lock:
             users_to_create -= self.users_ids_in_db
             users_to_create -= self.users_for_parse
-            users_to_create -= { u['id'] for u in self.users_for_save }
+            users_to_create -= { u.id for u in self.users_for_save }
 
             self.users_for_parse |= users_to_create
 
@@ -253,7 +265,7 @@ class BaseSpider(Spider):
         with self.artists_read_lock:
             artists_to_create -= self.artists_ids_in_db
             artists_to_create -= self.artists_for_parse
-            artists_to_create -= { a['id'] for a in self.artists_for_save }
+            artists_to_create -= { a.id for a in self.artists_for_save }
 
             self.artists_for_parse |= artists_to_create
 
@@ -261,22 +273,22 @@ class BaseSpider(Spider):
             yield Task('artist', self.BASE_URL + '/ru/artist/%d' % a, artist_id=a)
 
 
-        tags_to_create = { c['id'] for c in tags }
+        tags_to_create = { c.id for c in tags }
 
         with self.tag_read_lock:
             tags_to_create -= self.tags_ids_in_db
-            tags_to_create -= { t['id'] for t in self.tags_for_save }
+            tags_to_create -= { t.id for t in self.tags_for_save }
 
-            self.tags_for_save.extend(filter(lambda t: t['id'] in tags_to_create, tags))
+            self.tags_for_save.extend(filter(lambda t: t.id in tags_to_create, tags))
 
 
-        categories_to_create = { c['id'] for c in categories }
+        categories_to_create = { c.id for c in categories }
 
         with self.category_read_lock:
             categories_to_create -= self.categories_ids_in_db
-            categories_to_create -= { c['id'] for c in self.categories_for_save }
+            categories_to_create -= { c.id for c in self.categories_for_save }
 
-            self.categories_for_save.extend(filter(lambda x: x['id'] in categories_to_create, categories))
+            self.categories_for_save.extend(filter(lambda x: x.id in categories_to_create, categories))
 
     def task_user(self, grab, task):
         logging.info('Parsing user %s' % task.url)
@@ -327,20 +339,20 @@ class BaseSpider(Spider):
                 description = v
 
 
-        self.users_for_save.append({
-                'id': task.user_id,
-                'name': user_name,
-                'reg_date': reg_date,
-                'last_visit': last_visit,
-                'country': country,
-                'city': city,
-                'site': site,
-                'email': email,
-                'carma': carma,
-                'skype': skype,
-                'description': description,
-                'avatar_url': 'http://' + img_url[2:],
-        })
+        self.users_for_save.append(SpiderUser(
+                id=task.user_id,
+                name=user_name,
+                reg_date=reg_date,
+                last_visit=last_visit,
+                country=country,
+                city=city,
+                site=site,
+                email=email,
+                carma=carma,
+                skype=skype,
+                description=description,
+                avatar_url='http://' + img_url[2:],
+        ))
 
 
     def task_artist(self, grab, task):
@@ -352,12 +364,12 @@ class BaseSpider(Spider):
         description_el = info_el.select('.//dd')
         description_text = description_el.text() if description_el.exists() else None
 
-        self.artists_for_save.append({
-            'id': task.artist_id,
-            'name': name,
-            'avatar_url': 'http://' + avatar_url[2:],
-            'description': description_text,
-        })
+        self.artists_for_save.append(SpiderArtist(
+            id=task.artist_id,
+            name=name,
+            avatar_url='http://' + avatar_url[2:],
+            description=description_text,
+        ))
 
 
     def save_tags(self):
@@ -365,7 +377,7 @@ class BaseSpider(Spider):
 
         if len(self.tags_for_save) > 0:
             with transaction.atomic():
-                bulk_save_by_chunks(dicts_to_model_instances(self.tags_for_save, Tag), Tag, 4096)
+                bulk_save_namedtuples(self.tags_for_save, Tag, 4096)
 
         self.tags_for_save = []
 
@@ -377,7 +389,7 @@ class BaseSpider(Spider):
 
         if len(self.categories_for_save) > 0:
             with transaction.atomic():
-                bulk_save_by_chunks(dicts_to_model_instances(self.categories_for_save, Category), Category, 4096)
+                bulk_save_namedtuples(self.categories_for_save, Category, 4096)
 
         self.categories_for_save = []
 
@@ -388,13 +400,13 @@ class BaseSpider(Spider):
         logging.info('Saving users...')
 
         try:
-            User.objects.get(id=0)
+            User.objects.get(id=self.EMPTY_USER_ID)
         except User.DoesNotExist:
-            User.objects.create(id=0, name='', reg_date=tz.now(), last_visit=tz.now(), carma=0, avatar_url='')
+            User.objects.create(id=self.EMPTY_USER_ID, name='', reg_date=tz.now(), last_visit=tz.now(), carma=0, avatar_url='')
 
         if len(self.users_for_save) > 0:
             with transaction.atomic():
-                bulk_save_by_chunks(dicts_to_model_instances(self.users_for_save, User), User, 512)
+                bulk_save_namedtuples(self.users_for_save, User, 512)
 
         self.users_for_save = []
         self.users_for_parse = set()
@@ -407,7 +419,7 @@ class BaseSpider(Spider):
 
         if len(self.artists_for_save) > 0:
             with transaction.atomic():
-                bulk_save_by_chunks(dicts_to_model_instances(self.artists_for_save, Artist), Artist, 2048)
+                bulk_save_namedtuples(self.artists_for_save, Artist, 2048)
 
         self.artists_for_save = []
         self.artists_for_parse = set()
@@ -419,12 +431,11 @@ class BaseSpider(Spider):
         logging.info('Saving posts...')
 
         all_users = { u.id: u for u in User.objects.all() }
-        all_artists = { a.id: a for a in Artist.objects.all() }
 
-        [p.update(author=all_users[p['author_id']]) for p in self.posts_for_save]
+        self.posts_for_save = [p._replace(author=all_users[p.author_id]) for p in self.posts_for_save]
 
         with transaction.atomic():
-            bulk_save_by_chunks(dicts_to_model_instances(self.posts_for_save, Post), Post, 1024)
+            bulk_save_namedtuples(self.posts_for_save, Post, 1024)
 
         # cache for next save operations
 
@@ -440,9 +451,7 @@ class BaseSpider(Spider):
 
         with transaction.atomic():
             for post in self.posts_for_save:
-                raw_post_artists = set(post['artists_ids'])
-
-                self.all_posts_mapping[post['id']].artists.add(*[all_artists_mapping[a] for a in raw_post_artists])
+                self.all_posts_mapping[post.id].artists.add(*[all_artists_mapping[a] for a in post.artists_ids])
 
         logging.info('Saving posts-artists done')
 
@@ -454,9 +463,9 @@ class BaseSpider(Spider):
 
         with transaction.atomic():
             for post in self.posts_for_save:
-                raw_post_tags = { t['id'] for t in post['tags'] }
+                raw_post_tags = { t.id for t in post.tags }
 
-                self.all_posts_mapping[post['id']].tags.add(*[all_tags_mapping[t] for t in raw_post_tags])
+                self.all_posts_mapping[post.id].tags.add(*[all_tags_mapping[t] for t in raw_post_tags])
 
         logging.info('Saving posts-tags done')
 
@@ -468,9 +477,9 @@ class BaseSpider(Spider):
 
         with transaction.atomic():
             for post in self.posts_for_save:
-                raw_post_categories = { c['id'] for c in post['categories'] }
+                raw_post_categories = { c.id for c in post.categories }
 
-                self.all_posts_mapping[post['id']].categories.add(*[all_categories_mapping[c] for c in raw_post_categories])
+                self.all_posts_mapping[post.id].categories.add(*[all_categories_mapping[c] for c in raw_post_categories])
 
         logging.info('Saving posts-categories done')
 
@@ -481,15 +490,16 @@ class BaseSpider(Spider):
         entries_for_save = []
 
         for post in self.posts_for_save:
-            r_post = self.all_posts_mapping[post['id']]
-            entries = post['entries']
+            saved_post = self.all_posts_mapping[post.id]
+            entries = post.entries
 
-            [e.update(post=r_post) for e in entries]
+            for e in entries:
+                e.post = saved_post
 
             entries_for_save.extend(entries)
 
         with transaction.atomic():
-            bulk_save_by_chunks(dicts_to_model_instances(entries_for_save, Entry), Entry, 1024)
+            bulk_save_namedtuples(entries_for_save, Entry, 1024)
 
         logging.info('Saving entries done')
 
@@ -503,8 +513,10 @@ class BaseSpider(Spider):
             comments_mapping = {}
 
             for c in head_comments:
-                c.update(post=post, author=users_mapping[c['user_id']], reply_to=c.get('reply_to'))
-                cm = dict_to_model_instance(c, Comment)
+                c.post = post
+                c.author = users_mapping[c.user_id]
+
+                cm = dict_to_model_instance(c._asdict(), Comment)
                 # cm.save(force_insert=True)
                 comments_mapping.update({cm.id: cm})
 
@@ -518,23 +530,23 @@ class BaseSpider(Spider):
                 other = list(other_comments)
 
                 for c in comments:
-                    reply_to_current = list(filter(lambda x: x['reply_to_id'] == c.id, other))
+                    reply_to_current = list(filter(lambda x: x.reply_to_id == c.id, other))
 
                     for leaf in reply_to_current:
-                        leaf['reply_to'] = c
+                        leaf.reply_to = c
 
                     to_save.extend(reply_to_current)
 
-                save_comments_hierarchy(post, to_save, filter(lambda x: x['reply_to_id'] not in comments_mapping, other))
+                save_comments_hierarchy(post, to_save, filter(lambda x: x.reply_to_id not in comments_mapping, other))
 
         with transaction.atomic():
             for post in self.posts_for_save:
-                comments = post['comments']
+                comments = post.comments
 
-                to_save = filter(lambda x: x['reply_to_id'] is None, comments)
-                other = filter(lambda x: x['reply_to_id'] is not None, comments)
+                to_save = filter(lambda x: x.reply_to_id is None, comments)
+                other = filter(lambda x: x.reply_to_id is not None, comments)
 
-                save_comments_hierarchy(self.all_posts_mapping[post['id']], to_save, other)
+                save_comments_hierarchy(self.all_posts_mapping[post.id], to_save, other)
 
         logging.info('Saving comments done')
 

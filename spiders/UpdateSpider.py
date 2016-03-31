@@ -53,7 +53,7 @@ class UpdateSpider(BaseSpider):
             # all_posts = g.go(task.url + ('?limit=256&offset=4096')).json['posts']
 
             for x in range(0, max_offset + 10, 10):
-                logging.info('Loading stream posts %d-%d (%d) total_time time:%.2f' % (max_offset - x, max_offset - x - 256,  max_offset, g.response.total_time,))
+                # logging.info('Loading stream posts %d-%d (%d) total_time time:%.2f' % (max_offset - x, max_offset - x - 256,  max_offset, g.response.total_time,))
                 all_posts.extend(g.go(task.url + ('?limit=10&offset=%d' % x)).json['posts'])
 
             # yield Task('post', url=self.BASE_URL + '/ru/post/32033', post=list(filter(lambda x: x['id'] == '32033', all_posts))[0])
@@ -63,4 +63,4 @@ class UpdateSpider(BaseSpider):
 
             for post in all_posts:
                 if int(post['id']) not in post_ids_in_db:
-                    yield Task('post', url=self.BASE_URL + post['link'], post=post)
+                    yield Task('post', url=self.BASE_URL + post['link'], post=self.spider_post_from_post(post))
