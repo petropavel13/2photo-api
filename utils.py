@@ -121,12 +121,13 @@ def bulk_create_by_chunks(iterable_objects, dj_model, chunk_size=1024):
     for obj in iterable_objects:
         buffer[next_idx] = obj
 
-        if next_idx != 0 and next_idx % chunk_size == 0:
+        next_idx += 1
+
+        if next_idx % chunk_size == 0:
             dj_model.objects.bulk_create(buffer)
 
             next_idx = 0
 
-        next_idx += 1
 
     dj_model.objects.bulk_create(buffer[0:next_idx])
 
